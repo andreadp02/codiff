@@ -1946,6 +1946,40 @@ test('narrative walkthrough stops show pull request descriptions once', async ()
   expect(app.container.textContent).toContain('Keep the PR context visible.');
 });
 
+test('long unchanged regions expand in steps with an expand all option', async () => {
+  const path = 'src/long.ts';
+  const oldLines = Array.from({ length: 80 }, (_, index) => `line ${index + 1}\n`);
+  const newLines = [...oldLines];
+  newLines[0] = 'changed first\n';
+  newLines[79] = 'changed last\n';
+  const base = createChangedFile(path);
+  const section = {
+    ...base.sections[0]!,
+    loadState: 'ready' as const,
+    newFile: { contents: newLines.join(''), name: path },
+    oldFile: { contents: oldLines.join(''), name: path },
+  };
+  window.codiff = createCodiffMock({
+    getRepositoryState: vi.fn(async () => ({
+      ...repositoryState,
+      files: [{ ...base, sections: [section] }],
+    })),
+  });
+
+  await using app = await renderReact(<App />);
+
+  const diff = () => app.container.querySelector('diffs-container')?.shadowRoot;
+  const hiddenLines = () =>
+    Number(diff()?.querySelector('[data-unmodified-lines]')?.textContent?.match(/\d+/)?.[0]);
+  await waitFor(() => expect(hiddenLines()).toBe(72));
+  expect(diff()?.querySelector('[data-expand-all-button]')).not.toBeNull();
+
+  await act(async () => {
+    diff()?.querySelector<HTMLElement>('[data-expand-up]')?.click();
+  });
+  await waitFor(() => expect(hiddenLines()).toBe(52));
+});
+
 test('narrative walkthrough stops do not repeat commit details', async () => {
   const changedFile = createChangedFile('src/app.ts');
   const source = { ref: 'abc1234', type: 'commit' } satisfies ReviewSource;

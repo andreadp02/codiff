@@ -34,7 +34,8 @@ export const codeViewItemMetrics = {
 // may override --diffs-line-height through code font preferences.
 export const DIFF_LINE_HEIGHT = 20;
 
-export const diffContextExpansionLineCount = 100;
+// Matches GitHub and GitLab; longer hidden regions also get an "Expand all" button.
+export const diffContextExpansionLineCount = 20;
 export const diffCollapsedContextThreshold = 12;
 
 export const workerHighlighterOptions = {
